@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Activity, ArrowUpRight, Bot, CalendarDays, ChevronRight, Command,
   FolderKanban, GitBranch, LayoutDashboard, Menu, Plus, Radio,
@@ -23,15 +23,20 @@ const navigation = [
 
 function ShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
+  const [, startTransition] = useTransition();
   const { connection, botEnabled, error, loading, setUploaderOpen } = useStudio();
   const active = navigation.find(item => item.href === pathname) || { label: pathname === "/github" ? "GitHub" : pathname === "/portfolio" ? "Portfolio" : "Overview" };
 
   useEffect(() => { setMenuOpen(false); setNavigating(false); }, [pathname]);
-  const navigate = (href: string) => {
+  const navigate = (href: string, event?: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event && (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+    event?.preventDefault();
     if (href !== pathname) setNavigating(true);
     if (menuOpen) setMenuOpen(false);
+    if (href !== pathname) startTransition(() => router.push(href));
   };
 
   return <div className="studio-shell">
@@ -46,7 +51,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       <div className="sidebar-section-title">WORKSPACE <span>01—06</span></div>
       <nav aria-label="Main navigation" className="sidebar-nav">
         {navigation.map(({ href, label, icon: Icon, index }) =>
-          <a key={href} href={href} onClick={() => navigate(href)} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
+          <a key={href} href={href} onClick={(event) => navigate(href, event)} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
             <Icon size={18} strokeWidth={1.8} />
             <span>{label}</span>
             <small>{index}</small>
@@ -55,8 +60,8 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="sidebar-divider" />
       <div className="sidebar-section-title">DESTINATIONS</div>
-      <a href="/github" onClick={() => navigate("/github")} aria-current={pathname === "/github" ? "page" : undefined} className={`destination ${pathname === "/github" ? "is-active" : ""}`}><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></a>
-      <a href="/portfolio" onClick={() => navigate("/portfolio")} aria-current={pathname === "/portfolio" ? "page" : undefined} className={`destination ${pathname === "/portfolio" ? "is-active" : ""}`}><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></a>
+      <a href="/github" onClick={(event) => navigate("/github", event)} aria-current={pathname === "/github" ? "page" : undefined} className={`destination ${pathname === "/github" ? "is-active" : ""}`}><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></a>
+      <a href="/portfolio" onClick={(event) => navigate("/portfolio", event)} aria-current={pathname === "/portfolio" ? "page" : undefined} className={`destination ${pathname === "/portfolio" ? "is-active" : ""}`}><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></a>
       <div className="sidebar-bottom">
         <div className="sidebar-system">
           <span className="system-halo"><ShieldCheck size={22} /></span>
