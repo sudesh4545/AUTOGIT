@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { StudioShell } from "./studio-shell";
 
 export const metadata: Metadata = {
   title: "AutoGit Studio | Sudesh Mehar",
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body><StudioShell>{children}</StudioShell></body>
     </html>
   );
 }
