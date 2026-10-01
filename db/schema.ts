@@ -22,3 +22,21 @@ export const projectFiles = sqliteTable("project_files", {
   path: text("path").notNull(),
   size: integer("size").notNull(),
 });
+
+export const botControl = sqliteTable("bot_control", {
+  id: text("id").primaryKey(),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  lockUntil: text("lock_until"),
+  lastRunAt: text("last_run_at"),
+  lastStatus: text("last_status"),
+  lastMessage: text("last_message"),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const botRuns = sqliteTable("bot_runs", {
+  id: text("id").primaryKey(),
+  startedAt: text("started_at").notNull(),
+  status: text("status").notNull(),
+  message: text("message").notNull(),
+  projectId: text("project_id"),
+});

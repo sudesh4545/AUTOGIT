@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../db";
-import { projectFiles, projects } from "../db/schema";
+import { botControl, botRuns, projectFiles, projects } from "../db/schema";
 
 type Project = typeof projects.$inferSelect;
 const api = "https://api.github.com";
@@ -114,7 +114,24 @@ async function syncPortfolio(project: Project, githubUrl: string) {
   await putContent(repo, sourcePath, updated, "Connect AutoGit mini project feed");
 }
 
-export async function runPublisher() {
+export async function getBotState() {
+  const db = getDb();
+  await db.insert(botControl).values({ id: "primary", updatedAt: new Date().toISOString() }).onConflictDoNothing();
+  const [control] = await db.select().from(botControl).where(eq(botControl.id, "primary"));
+  const runs = await db.select().from(botRuns).orderBy(desc(botRuns.startedAt)).limit(8);
+  return { control, runs };
+}
+
+export async function setBotEnabled(enabled: boolean) {
+  const db = getDb();
+  await db.insert(botControl).values({ id: "primary", enabled, updatedAt: new Date().toISOString() }).onConflictDoUpdate({
+    target: botControl.id,
+    set: { enabled, updatedAt: new Date().toISOString() },
+  });
+  return getBotState();
+}
+
+async function publishNextProject() {
   if (!env.GITHUB_TOKEN) return { status: "not_configured", message: "GitHub connection is not configured." };
   const db = getDb();
   const [last] = await db.select().from(projects).where(eq(projects.status, "published")).orderBy(desc(projects.publishedAt)).limit(1);
@@ -129,10 +146,35 @@ export async function runPublisher() {
     const githubUrl = `https://github.com/${owner()}/${repo}`;
     await syncPortfolio(project, githubUrl);
     await db.update(projects).set({ status: "published", githubUrl, publishedAt: new Date().toISOString() }).where(eq(projects.id, project.id));
-    return { status: "published", project: project.title, githubUrl };
+    return { status: "published", project: project.title, projectId: project.id, githubUrl, message: `${project.title} published to GitHub and portfolio.` };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Publishing failed.";
     await db.update(projects).set({ status: "failed", error: message }).where(eq(projects.id, project.id));
-    return { status: "failed", project: project.title, message };
+    return { status: "failed", project: project.title, projectId: project.id, message };
+  }
+}
+
+export async function runPublisher() {
+  const db = getDb();
+  const { control } = await getBotState();
+  if (!control.enabled) return { status: "paused", message: "Publishing is paused from Bot Control." };
+  const now = new Date();
+  const [locked] = await db.update(botControl)
+    .set({ lockUntil: new Date(now.getTime() + 15 * 60 * 1000).toISOString() })
+    .where(and(eq(botControl.id, "primary"), or(isNull(botControl.lockUntil), lt(botControl.lockUntil, now.toISOString()))))
+    .returning({ id: botControl.id });
+  if (!locked) return { status: "busy", message: "A publishing check is already running." };
+  try {
+    const result = await publishNextProject();
+    const finishedAt = new Date().toISOString();
+    await db.insert(botRuns).values({
+      id: crypto.randomUUID(), startedAt: finishedAt, status: result.status,
+      message: result.message, projectId: "projectId" in result ? result.projectId : null,
+    });
+    await db.update(botControl).set({ lastRunAt: finishedAt, lastStatus: result.status, lastMessage: result.message })
+      .where(eq(botControl.id, "primary"));
+    return result;
+  } finally {
+    await db.update(botControl).set({ lockUntil: null }).where(eq(botControl.id, "primary"));
   }
 }

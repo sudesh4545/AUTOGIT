@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@fontsource-variable/manrope/index.css";
+import "@fontsource-variable/space-grotesk/index.css";
 import { StudioShell } from "./studio-shell";
 
 export const metadata: Metadata = {

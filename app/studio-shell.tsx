@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Activity, ArrowUpRight, CalendarDays, ChevronRight, Command,
+  Activity, ArrowUpRight, Bot, CalendarDays, ChevronRight, Command,
   FolderKanban, GitBranch, LayoutDashboard, Menu, Plus, Radio,
-  Settings2, ShieldCheck, UploadCloud, X,
+  Settings2, ShieldCheck, UploadCloud,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ParticleField } from "./particle-field";
@@ -17,14 +17,15 @@ const navigation = [
   { href: "/projects", label: "Projects", icon: FolderKanban, index: "02" },
   { href: "/schedule", label: "Schedule", icon: CalendarDays, index: "03" },
   { href: "/activity", label: "Activity", icon: Activity, index: "04" },
-  { href: "/settings", label: "Settings", icon: Settings2, index: "05" },
+  { href: "/bot", label: "Bot Control", icon: Bot, index: "05" },
+  { href: "/settings", label: "Settings", icon: Settings2, index: "06" },
 ];
 
 function ShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { connection, error, loading, setUploaderOpen } = useStudio();
-  const active = navigation.find(item => item.href === pathname) || navigation[0];
+  const { connection, botEnabled, error, loading, setUploaderOpen } = useStudio();
+  const active = navigation.find(item => item.href === pathname) || { label: pathname === "/github" ? "GitHub" : pathname === "/portfolio" ? "Portfolio" : "Overview" };
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
@@ -37,7 +38,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         <span className="wordmark-icon"><Command size={22} strokeWidth={2.2} /></span>
         <span><strong>AUTO<span>GIT</span></strong><small>MISSION CONTROL</small></span>
       </Link>
-      <div className="sidebar-section-title">WORKSPACE <span>01—05</span></div>
+      <div className="sidebar-section-title">WORKSPACE <span>01—06</span></div>
       <nav aria-label="Main navigation" className="sidebar-nav">
         {navigation.map(({ href, label, icon: Icon, index }) =>
           <Link key={href} href={href} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
@@ -49,14 +50,14 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="sidebar-divider" />
       <div className="sidebar-section-title">DESTINATIONS</div>
-      <div className="destination"><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></div>
-      <div className="destination"><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></div>
+      <Link href="/github" className={`destination ${pathname === "/github" ? "is-active" : ""}`}><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></Link>
+      <Link href="/portfolio" className={`destination ${pathname === "/portfolio" ? "is-active" : ""}`}><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></Link>
       <div className="sidebar-bottom">
         <div className="sidebar-system">
           <span className="system-halo"><ShieldCheck size={22} /></span>
           <strong>Cloud publishing</strong>
-          <p>Scheduled checks continue even when your laptop is off.</p>
-          <span className="system-caption"><i /> DAILY CHECK · 10:00 IST</span>
+          <p>Cloud checks continue even when your laptop is off.</p>
+          <span className="system-caption"><i /> {botEnabled === false ? "PUBLISHING PAUSED" : "DAILY CHECK · 10:00 IST"}</span>
         </div>
         <div className="owner-row"><span className="owner-avatar">SM</span><span><strong>Sudesh Mehar</strong><small>Workspace owner</small></span><ChevronRight size={15} /></div>
       </div>
@@ -66,7 +67,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         <button className="menu-trigger" aria-label="Open navigation" onClick={() => setMenuOpen(true)}><Menu size={21} /></button>
         <span className="breadcrumbs">AUTOGIT <ChevronRight size={13} /> <strong>{active.label.toUpperCase()}</strong></span>
         <span className="topbar-center">PROJECT AUTOMATION SYSTEM</span>
-        <div className="topbar-actions"><span className="topbar-live"><i /> {connection.githubConnected ? "SYSTEM ONLINE" : "SETUP REQUIRED"}</span><button className="topbar-add" onClick={() => setUploaderOpen(true)}><Plus size={17}/><span>ADD PROJECT</span></button></div>
+        <div className="topbar-actions"><span className="topbar-live"><i /> {botEnabled === false ? "BOT PAUSED" : connection.githubConnected ? "SYSTEM ONLINE" : "SETUP REQUIRED"}</span><button className="topbar-add" onClick={() => setUploaderOpen(true)}><Plus size={17}/><span>ADD PROJECT</span></button></div>
       </header>
       <main className="page-main">
         {error && <div className="site-alert" role="alert">{error} <a href={`/signin-with-chatgpt?return_to=${encodeURIComponent(pathname)}`}>Sign in</a></div>}
