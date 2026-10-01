@@ -58,20 +58,18 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     portfolioTarget: "sudesh4545/sudesh-portfolio",
   });
   const [loading, setLoading] = useState(true);
-  const [botEnabled, setBotEnabled] = useState<boolean | null>(null);
+  const [botEnabled] = useState<boolean | null>(true);
   const [error, setError] = useState("");
   const [uploaderOpen, setUploaderOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const [projectResponse, statusResponse, botResponse] = await Promise.all([
+      const [projectResponse, statusResponse] = await Promise.all([
         fetch("/api/projects", { cache: "no-store" }),
         fetch("/api/status", { cache: "no-store" }),
-        fetch("/api/bot", { cache: "no-store" }),
       ]);
       const projectData = await projectResponse.json() as { projects?: Project[]; error?: string };
       const statusData = await statusResponse.json() as Partial<Connection>;
-      const botData = await botResponse.json() as { control?: { enabled: boolean } };
       if (!projectResponse.ok) throw new Error(projectData.error || "Project data is unavailable.");
       setProjects(projectData.projects || []);
       if (statusResponse.ok) setConnection({
@@ -79,7 +77,6 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
         storageReady: Boolean(statusData.storageReady),
         portfolioTarget: statusData.portfolioTarget || "sudesh4545/sudesh-portfolio",
       });
-      if (botResponse.ok) setBotEnabled(Boolean(botData.control?.enabled));
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load studio data.");
