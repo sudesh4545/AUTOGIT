@@ -44,6 +44,16 @@ type StudioState = {
 
 const StudioContext = createContext<StudioState | null>(null);
 
+async function fetchWithTimeout(url: string) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 4500);
+  try {
+    return await fetch(url, { cache: "no-store", signal: controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 export function useStudio() {
   const value = useContext(StudioContext);
   if (!value) throw new Error("Studio provider is missing.");
@@ -65,8 +75,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const [projectResponse, statusResponse] = await Promise.all([
-        fetch("/api/projects", { cache: "no-store" }),
-        fetch("/api/status", { cache: "no-store" }),
+        fetchWithTimeout("/api/projects"),
+        fetchWithTimeout("/api/status"),
       ]);
       const projectData = await projectResponse.json() as { projects?: Project[]; error?: string };
       const statusData = await statusResponse.json() as Partial<Connection>;

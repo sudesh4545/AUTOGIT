@@ -124,6 +124,7 @@ a { color: inherit; }
 .studio-footer { display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid #ffffff17; padding: 18px clamp(24px, 3.2vw, 50px); font-size: 9px; color: #5b6d83; font-weight: 800; letter-spacing: 1.3px; }
 .studio-footer span span { color: var(--red); }
 .loading-line { height: 2px; background: linear-gradient(90deg, transparent, var(--red), var(--blue), transparent); animation: loading 1.4s linear infinite; margin: -33px 0 31px; }
+.navigation-line { position: fixed; z-index: 20; top: 0; left: 0; right: 0; height: 3px; margin: 0; box-shadow: 0 0 18px var(--red), 0 0 35px var(--blue); }
 .site-alert { padding: 11px 15px; border: 1px solid #ff526a71; border-radius: 8px; background: #5f1d2c66; color: #ffe3e8; font-size: 13px; margin-bottom: 20px; }
 .site-alert a { margin-left: 8px; color: white; font-weight: 700; }
 
