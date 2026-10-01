@@ -38,6 +38,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     if (menuOpen) setMenuOpen(false);
     if (href !== pathname) startTransition(() => router.push(href));
   };
+  const warmRoute = (href: string) => { if (href !== pathname) void router.prefetch(href); };
 
   return <div className="studio-shell">
     <ParticleField />
@@ -51,7 +52,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       <div className="sidebar-section-title">WORKSPACE <span>01—06</span></div>
       <nav aria-label="Main navigation" className="sidebar-nav">
         {navigation.map(({ href, label, icon: Icon, index }) =>
-          <a key={href} href={href} onClick={(event) => navigate(href, event)} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
+          <a key={href} href={href} onMouseEnter={() => warmRoute(href)} onTouchStart={() => warmRoute(href)} onClick={(event) => navigate(href, event)} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
             <Icon size={18} strokeWidth={1.8} />
             <span>{label}</span>
             <small>{index}</small>
@@ -60,8 +61,8 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       </nav>
       <div className="sidebar-divider" />
       <div className="sidebar-section-title">DESTINATIONS</div>
-      <a href="/github" onClick={(event) => navigate("/github", event)} aria-current={pathname === "/github" ? "page" : undefined} className={`destination ${pathname === "/github" ? "is-active" : ""}`}><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></a>
-      <a href="/portfolio" onClick={(event) => navigate("/portfolio", event)} aria-current={pathname === "/portfolio" ? "page" : undefined} className={`destination ${pathname === "/portfolio" ? "is-active" : ""}`}><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></a>
+      <a href="/github" onMouseEnter={() => warmRoute("/github")} onTouchStart={() => warmRoute("/github")} onClick={(event) => navigate("/github", event)} aria-current={pathname === "/github" ? "page" : undefined} className={`destination ${pathname === "/github" ? "is-active" : ""}`}><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></a>
+      <a href="/portfolio" onMouseEnter={() => warmRoute("/portfolio")} onTouchStart={() => warmRoute("/portfolio")} onClick={(event) => navigate("/portfolio", event)} aria-current={pathname === "/portfolio" ? "page" : undefined} className={`destination ${pathname === "/portfolio" ? "is-active" : ""}`}><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></a>
       <div className="sidebar-bottom">
         <div className="sidebar-system">
           <span className="system-halo"><ShieldCheck size={22} /></span>
