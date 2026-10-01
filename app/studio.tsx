@@ -44,15 +44,15 @@ export default function Studio() {
     setUploadError("");
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("title", title);
-      form.append("description", description);
-      form.append("collection", collection);
-      form.append("technologies", technologies);
-      form.append("demoUrl", demoUrl);
-      form.append("paths", JSON.stringify(files.map(file => file.webkitRelativePath || file.name)));
-      files.forEach(file => form.append("files", file));
-      const response = await fetch("/api/projects", { method: "POST", body: form });
+      const total = files.reduce((sum, file) => sum + file.size, 0);
+      if (files.length > 40 || total > 10 * 1024 * 1024) throw new Error("Choose at most 40 files under 10 MB total.");
+      const encodedFiles = await Promise.all(files.map(async file => {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let binary = "";
+        for (let index = 0; index < bytes.length; index += 32768) binary += String.fromCharCode(...bytes.slice(index,index+32768));
+        return { path: file.webkitRelativePath || file.name, size: file.size, content: btoa(binary) };
+      }));
+      const response = await fetch("/api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, description, collection, technologies, demoUrl, files: encodedFiles }) });
       const data = await response.json() as { error?: string; project: Project };
       if (!response.ok) throw new Error(data.error || "Upload failed.");
       setProjects(current => [data.project, ...current]);
