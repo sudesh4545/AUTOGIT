@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity, ArrowUpRight, Bot, CalendarDays, ChevronRight, Command,
@@ -34,24 +33,24 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     <div className="ambient-grid" aria-hidden="true" />
     {menuOpen && <button className="mobile-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
     <aside className={`studio-sidebar ${menuOpen ? "sidebar-visible" : ""}`}>
-      <Link className="wordmark" href="/" aria-label="AutoGit Studio home">
+      <a className="wordmark" href="/" aria-label="AutoGit Studio home">
         <span className="wordmark-icon"><Command size={22} strokeWidth={2.2} /></span>
         <span><strong>AUTO<span>GIT</span></strong><small>MISSION CONTROL</small></span>
-      </Link>
+      </a>
       <div className="sidebar-section-title">WORKSPACE <span>01—06</span></div>
       <nav aria-label="Main navigation" className="sidebar-nav">
         {navigation.map(({ href, label, icon: Icon, index }) =>
-          <Link key={href} href={href} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
+          <a key={href} href={href} aria-current={pathname === href ? "page" : undefined} className={`sidebar-link ${pathname === href ? "is-active" : ""}`}>
             <Icon size={18} strokeWidth={1.8} />
             <span>{label}</span>
             <small>{index}</small>
-          </Link>
+          </a>
         )}
       </nav>
       <div className="sidebar-divider" />
       <div className="sidebar-section-title">DESTINATIONS</div>
-      <Link href="/github" className={`destination ${pathname === "/github" ? "is-active" : ""}`}><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></Link>
-      <Link href="/portfolio" className={`destination ${pathname === "/portfolio" ? "is-active" : ""}`}><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></Link>
+      <a href="/github" aria-current={pathname === "/github" ? "page" : undefined} className={`destination ${pathname === "/github" ? "is-active" : ""}`}><GitBranch size={17} /><span>GitHub</span><i className={connection.githubConnected ? "live" : ""} /></a>
+      <a href="/portfolio" aria-current={pathname === "/portfolio" ? "page" : undefined} className={`destination ${pathname === "/portfolio" ? "is-active" : ""}`}><Radio size={17} /><span>Portfolio</span><i className={connection.storageReady ? "live" : ""} /></a>
       <div className="sidebar-bottom">
         <div className="sidebar-system">
           <span className="system-halo"><ShieldCheck size={22} /></span>
