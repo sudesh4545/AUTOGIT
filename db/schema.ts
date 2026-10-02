@@ -29,6 +29,7 @@ export const projectFiles = sqliteTable("project_files", {
 export const botControl = sqliteTable("bot_control", {
   id: text("id").primaryKey(),
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  intervalMinutes: integer("interval_minutes").notNull().default(2880),
   lockUntil: text("lock_until"),
   lastRunAt: text("last_run_at"),
   lastStatus: text("last_status"),

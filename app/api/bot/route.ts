@@ -10,9 +10,11 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   if (!await getWorkspaceUser()) return Response.json({ error: "Sign in to manage the bot." }, { status: 401 });
-  const body = await request.json().catch(() => null) as { enabled?: unknown } | null;
+  const body = await request.json().catch(() => null) as { enabled?: unknown; intervalMinutes?: unknown } | null;
   if (typeof body?.enabled !== "boolean") return Response.json({ error: "Choose an enabled state." }, { status: 400 });
-  try { return Response.json(await setBotEnabled(body.enabled)); }
+  const intervalMinutes = Number(body.intervalMinutes);
+  if (body.intervalMinutes !== undefined && ![1, 1440, 2880].includes(intervalMinutes)) return Response.json({ error: "Choose 1 minute, 1 day or 2 days." }, { status: 400 });
+  try { return Response.json(await setBotEnabled(body.enabled, body.intervalMinutes === undefined ? undefined : intervalMinutes)); }
   catch { return Response.json({ error: "Could not update bot state." }, { status: 503 }); }
 }
 

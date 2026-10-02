@@ -16,7 +16,8 @@ database.database_id = databaseId;
 database.database_name = "autogit-d1";
 // Queued source files are stored in D1, so R2 is not required (or billed).
 config.r2_buckets = [];
-config.triggers = { crons: ["30 4 * * *"] };
+// Check every minute; the D1 interval setting decides when a project is eligible.
+config.triggers = { crons: ["* * * * *"] };
 config.vars = {
   ...(config.vars || {}),
   GITHUB_OWNER: "sudesh4545",

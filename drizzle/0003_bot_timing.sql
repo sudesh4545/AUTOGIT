@@ -1,0 +1,1 @@
+ALTER TABLE bot_control ADD COLUMN interval_minutes INTEGER NOT NULL DEFAULT 2880;

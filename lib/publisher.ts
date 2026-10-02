@@ -14,7 +14,8 @@ const headers = () => ({
 });
 const owner = () => env.GITHUB_OWNER || "sudesh4545";
 const portfolioRepo = () => env.PORTFOLIO_REPO || "sudesh-portfolio";
-const publishIntervalMs = () => {
+const publishIntervalMs = (configuredMinutes?: number | null) => {
+  if (configuredMinutes && Number.isFinite(configuredMinutes) && configuredMinutes > 0) return configuredMinutes * 60 * 1000;
   const minutes = Number(env.PUBLISH_INTERVAL_MINUTES || "2880");
   return Number.isFinite(minutes) && minutes > 0 ? minutes * 60 * 1000 : 48 * 60 * 60 * 1000;
 };
@@ -124,11 +125,11 @@ export async function getBotState() {
   return { control, runs };
 }
 
-export async function setBotEnabled(enabled: boolean) {
+export async function setBotEnabled(enabled: boolean, intervalMinutes?: number) {
   const db = getDb();
   await db.insert(botControl).values({ id: "primary", enabled, updatedAt: new Date().toISOString() }).onConflictDoUpdate({
     target: botControl.id,
-    set: { enabled, updatedAt: new Date().toISOString() },
+    set: { enabled, ...(intervalMinutes ? { intervalMinutes } : {}), updatedAt: new Date().toISOString() },
   });
   return getBotState();
 }
@@ -137,7 +138,8 @@ async function publishNextProject() {
   if (!env.GITHUB_TOKEN) return { status: "not_configured", message: "GitHub connection is not configured." };
   const db = getDb();
   const [last] = await db.select().from(projects).where(eq(projects.status, "published")).orderBy(desc(projects.publishedAt)).limit(1);
-  if (last?.publishedAt && Date.now() - Date.parse(last.publishedAt) < publishIntervalMs()) return { status: "not_due", message: "The next publishing window has not arrived." };
+  const [control] = await db.select().from(botControl).where(eq(botControl.id, "primary"));
+  if (last?.publishedAt && Date.now() - Date.parse(last.publishedAt) < publishIntervalMs(control?.intervalMinutes)) return { status: "not_due", message: "The next publishing window has not arrived." };
   const [project] = await db.select().from(projects).where(or(eq(projects.status, "queued"), eq(projects.status, "failed"))).orderBy(projects.createdAt).limit(1);
   if (!project) return { status: "empty", message: "No projects are queued." };
   const repo = `mini-${project.slug}-${project.id.slice(0, 6)}`;
