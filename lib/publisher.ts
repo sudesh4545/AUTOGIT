@@ -14,6 +14,10 @@ const headers = () => ({
 });
 const owner = () => env.GITHUB_OWNER || "sudesh4545";
 const portfolioRepo = () => env.PORTFOLIO_REPO || "sudesh-portfolio";
+const publishIntervalMs = () => {
+  const minutes = Number(env.PUBLISH_INTERVAL_MINUTES || "2880");
+  return Number.isFinite(minutes) && minutes > 0 ? minutes * 60 * 1000 : 48 * 60 * 60 * 1000;
+};
 
 async function gh(path: string, init: RequestInit = {}) {
   const response = await fetch(`${api}${path}`, { ...init, headers: { ...headers(), ...init.headers } });
@@ -135,7 +139,7 @@ async function publishNextProject() {
   if (!env.GITHUB_TOKEN) return { status: "not_configured", message: "GitHub connection is not configured." };
   const db = getDb();
   const [last] = await db.select().from(projects).where(eq(projects.status, "published")).orderBy(desc(projects.publishedAt)).limit(1);
-  if (last?.publishedAt && Date.now() - Date.parse(last.publishedAt) < 48 * 60 * 60 * 1000) return { status: "not_due", message: "The next two-day publishing window has not arrived." };
+  if (last?.publishedAt && Date.now() - Date.parse(last.publishedAt) < publishIntervalMs()) return { status: "not_due", message: "The next publishing window has not arrived." };
   const [project] = await db.select().from(projects).where(or(eq(projects.status, "queued"), eq(projects.status, "failed"))).orderBy(projects.createdAt).limit(1);
   if (!project) return { status: "empty", message: "No projects are queued." };
   const repo = `mini-${project.slug}-${project.id.slice(0, 6)}`;
