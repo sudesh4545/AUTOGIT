@@ -80,7 +80,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         <button className="menu-trigger" aria-label="Open navigation" onClick={() => setMenuOpen(true)}><Menu size={21} /></button>
         <span className="breadcrumbs">AUTOGIT <ChevronRight size={13} /> <strong>{active.label.toUpperCase()}</strong></span>
         <span className="topbar-center">PROJECT AUTOMATION SYSTEM</span>
-        <div className="topbar-actions"><span className="topbar-live"><i /> {botEnabled === false ? "BOT PAUSED" : connection.githubConnected ? "SYSTEM ONLINE" : "SETUP REQUIRED"}</span><button className="topbar-add" onClick={() => setUploaderOpen(true)}><Plus size={17}/><span>ADD PROJECT</span></button></div>
+        <div className="topbar-actions"><span className="topbar-live"><i /> {botEnabled === false ? "BOT PAUSED" : connection.githubConnected ? "SYSTEM ONLINE" : "SETUP REQUIRED"}</span>{!accessKey && <button className="outline-action unlock-action" onClick={() => setAccessOpen(true)}><ShieldCheck size={16}/><span>UNLOCK CONTROLS</span></button>}<button className="topbar-add" onClick={() => setUploaderOpen(true)}><Plus size={17}/><span>ADD PROJECT</span></button></div>
       </header>
       <main className="page-main">
         {error && <div className="site-alert" role="alert">{error} <button className="site-alert-action" onClick={() => setAccessOpen(true)}>UNLOCK</button></div>}
