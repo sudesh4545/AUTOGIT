@@ -41,8 +41,9 @@ export function ParticleField() {
         const point = locations[index];
         context.beginPath();
         context.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
-        context.fillStyle = index % 7 === 0 ? "rgba(255,67,88,.86)" : "rgba(255,54,78,.48)";
-        if (index % 7 === 0) { context.shadowColor = "#ff334f"; context.shadowBlur = 15; }
+        const colors = ["rgba(255,67,105,.72)", "rgba(153,96,255,.58)", "rgba(65,164,255,.52)", "rgba(237,72,168,.55)"];
+        context.fillStyle = colors[index % colors.length];
+        if (index % 7 === 0) { context.shadowColor = colors[index % colors.length]; context.shadowBlur = 15; }
         context.fill();
         context.shadowBlur = 0;
         if (index % 3 === 0) {
@@ -52,7 +53,9 @@ export function ParticleField() {
             context.beginPath();
             context.moveTo(point.x, point.y);
             context.lineTo(next.x, next.y);
-            context.strokeStyle = `rgba(255,65,88,${0.15 * (1 - distance / 260)})`;
+            context.strokeStyle = index % 2 === 0
+              ? `rgba(255,65,110,${0.13 * (1 - distance / 260)})`
+              : `rgba(125,102,255,${0.12 * (1 - distance / 260)})`;
             context.stroke();
           }
         }
