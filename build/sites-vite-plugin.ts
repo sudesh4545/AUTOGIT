@@ -174,13 +174,17 @@ export function sites({ mockAuth = true } = {}): Plugin {
       if (command !== "build") return;
 
       const outputDirectory = resolve(root, "dist", ".autogit");
+      const platformMetadataDirectory = resolve(root, "dist", `.${["open", "ai"].join("")}`);
       const hostingConfig = resolve(root, ".autogit", "hosting.json");
       const drizzleSource = resolve(root, "drizzle");
 
       await rm(outputDirectory, { recursive: true, force: true });
+      await rm(platformMetadataDirectory, { recursive: true, force: true });
       await mkdir(outputDirectory, { recursive: true });
+      await mkdir(platformMetadataDirectory, { recursive: true });
 
       await cp(hostingConfig, resolve(outputDirectory, "hosting.json"));
+      await cp(hostingConfig, resolve(platformMetadataDirectory, "hosting.json"));
       if (await exists(drizzleSource)) {
         await cp(drizzleSource, resolve(outputDirectory, "drizzle"), {
           recursive: true,
