@@ -27,6 +27,7 @@ type StudioState = {
   projects: Project[];
   connection: Connection;
   botEnabled: boolean | null;
+  botIntervalMinutes: number;
   loading: boolean;
   error: string;
   uploaderOpen: boolean;
@@ -75,7 +76,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     portfolioTarget: "sudesh4545/sudesh-portfolio",
   });
   const [loading, setLoading] = useState(true);
-  const [botEnabled] = useState<boolean | null>(true);
+  const [botEnabled, setBotEnabled] = useState<boolean | null>(true);
+  const [botIntervalMinutes, setBotIntervalMinutes] = useState(2880);
   const [error, setError] = useState("");
   const [uploaderOpen, setUploaderOpen] = useState(false);
   const [accessKey, setAccessKeyState] = useState("");
@@ -89,9 +91,10 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const [projectResponse, statusResponse] = await Promise.all([
+      const [projectResponse, statusResponse, botResponse] = await Promise.all([
         fetchWithTimeout("/api/projects"),
         fetchWithTimeout("/api/status"),
+        fetchWithTimeout("/api/bot"),
       ]);
       const projectData = await projectResponse.json() as { projects?: Project[]; error?: string };
       const statusData = await statusResponse.json() as Partial<Connection>;
@@ -102,6 +105,11 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
         storageReady: Boolean(statusData.storageReady),
         portfolioTarget: statusData.portfolioTarget || "sudesh4545/sudesh-portfolio",
       });
+      if (botResponse.ok) {
+        const botData = await botResponse.json() as { control?: { enabled?: boolean; intervalMinutes?: number } };
+        if (typeof botData.control?.enabled === "boolean") setBotEnabled(botData.control.enabled);
+        if (typeof botData.control?.intervalMinutes === "number") setBotIntervalMinutes(botData.control.intervalMinutes);
+      }
       setError("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load studio data.");
@@ -143,6 +151,6 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   };
 
   return <StudioContext.Provider value={{
-    projects, connection, botEnabled, loading, error, uploaderOpen, setUploaderOpen, accessKey, setAccessKey, refresh, upload,
+    projects, connection, botEnabled, botIntervalMinutes, loading, error, uploaderOpen, setUploaderOpen, accessKey, setAccessKey, refresh, upload,
   }}>{children}</StudioContext.Provider>;
 }

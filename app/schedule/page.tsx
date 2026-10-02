@@ -14,20 +14,22 @@ function nextCheck(after: number) {
 }
 
 export default function SchedulePage() {
-  const { projects, botEnabled, setUploaderOpen } = useStudio();
+  const { projects, botEnabled, botIntervalMinutes, setUploaderOpen } = useStudio();
+  const timing = botIntervalMinutes === 1 ? "1 minute" : botIntervalMinutes === 1440 ? "24 hours" : "2 days";
   const queued = queuedProjects(projects);
   const published = publishedProjects(projects);
   const next = nextRelease(projects);
   const last = published[0]?.publishedAt ? Date.parse(published[0].publishedAt) : 0;
-  const firstSlot = nextCheck(Math.max(Date.now(), last ? last + 48 * 60 * 60 * 1000 - 60 * 1000 : 0));
-  const slots = queued.map((project, index) => ({ project, at: new Date(firstSlot + index * 48 * 60 * 60 * 1000) }));
+  const intervalMs = botIntervalMinutes * 60 * 1000;
+  const firstSlot = nextCheck(Math.max(Date.now(), last ? last + intervalMs - 60 * 1000 : 0));
+  const slots = queued.map((project, index) => ({ project, at: new Date(firstSlot + index * intervalMs) }));
   return <>
-    <PageHeading eyebrow="AUTOMATION TIMELINE / 03" title="On schedule." accent="Even offline." description="The cloud checks every day and publishes at most one real project every 48 hours." action={<button className="red-button" onClick={() => setUploaderOpen(true)}><Plus size={17}/> QUEUE PROJECT</button>} />
+    <PageHeading eyebrow="AUTOMATION TIMELINE / 03" title="On schedule." accent="Even offline." description={`The cloud checks every minute and publishes at most one real project every ${timing}.`} action={<button className="red-button" onClick={() => setUploaderOpen(true)}><Plus size={17}/> QUEUE PROJECT</button>} />
     <div className="schedule-top-grid">
       <section className="glass-panel schedule-hero"><div className="schedule-hero-head"><span className="eyebrow">NEXT DEPLOYMENT WINDOW</span><CalendarClock size={22}/></div><span className="schedule-big">{botEnabled === false ? "PUBLISHING PAUSED" : next.label}</span><p>{botEnabled === false ? "Resume publishing from Bot Control to release queued projects." : next.detail}</p><div className="schedule-sweep" aria-hidden="true"><span/><span/><span/><span/><span/><span/><span/></div><div className="schedule-hero-bottom"><span><i/> {botEnabled === false ? "PUBLISHING PAUSED" : "AUTOMATION ACTIVE"}</span><span>ASIA / KOLKATA</span></div></section>
-      <section className="glass-panel rules-panel"><span className="eyebrow">PUBLISHING RULES</span><h2>Simple, reliable rhythm.</h2><div className="rule-row"><span><Radio size={19}/></span><div><strong>Daily cloud check</strong><p>At 10:00 AM India time, even when your laptop is off.</p></div></div><div className="rule-row"><span><Clock3 size={19}/></span><div><strong>48-hour release gap</strong><p>At most one queued project is published each cycle.</p></div></div><div className="rule-row"><span><GitBranch size={19}/></span><div><strong>Two destinations</strong><p>GitHub repository and portfolio collection update together.</p></div></div></section>
+      <section className="glass-panel rules-panel"><span className="eyebrow">PUBLISHING RULES</span><h2>Simple, reliable rhythm.</h2><div className="rule-row"><span><Radio size={19}/></span><div><strong>Minute-by-minute cloud check</strong><p>Runs in the cloud even when your laptop is off.</p></div></div><div className="rule-row"><span><Clock3 size={19}/></span><div><strong>{timing} release gap</strong><p>At most one queued project is published each cycle.</p></div></div><div className="rule-row"><span><GitBranch size={19}/></span><div><strong>Two destinations</strong><p>GitHub repository and portfolio collection update together.</p></div></div></section>
     </div>
     <section className="glass-panel timeline-panel"><div className="section-header"><div><span className="eyebrow">UPCOMING / PIPELINE</span><h2>Release timeline</h2></div><span className="timeline-count">{queued.length} IN QUEUE</span></div>{slots.length ? <div className="timeline-list">{slots.map(({project,at},index) => <div className="timeline-entry" key={project.id}><span className="timeline-node"><span/></span><span className="timeline-index">{String(index+1).padStart(2,"0")}</span><div><strong>{project.title}</strong><small>{project.collection.toUpperCase()} PROJECT · {project.fileCount} FILES</small></div><time dateTime={at.toISOString()}>EST. {new Intl.DateTimeFormat("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}).format(at)}</time><StatusTag status={project.status}/></div>)}</div> : <div className="schedule-empty"><Check size={26}/><strong>No upcoming releases</strong><p>Upload a project to populate the timeline.</p><button className="ghost-button" onClick={() => setUploaderOpen(true)}>ADD PROJECT <ArrowUpRight size={15}/></button></div>}</section>
-    <p className="schedule-note">Estimated dates can shift after a failed release or a delayed cloud check. The 48-hour gap is enforced from the last successful publication.</p>
+    <p className="schedule-note">Estimated dates can shift after a failed release or a delayed cloud check. The {timing} gap is enforced from the last successful publication. Change it in Bot Control.</p>
   </>;
 }

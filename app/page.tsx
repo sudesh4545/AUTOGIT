@@ -8,7 +8,8 @@ import { nextRelease, publishedProjects, queuedProjects } from "./studio-data";
 import { useStudio } from "./studio-context";
 
 export default function Overview() {
-  const { projects, connection, setUploaderOpen } = useStudio();
+  const { projects, connection, botIntervalMinutes, setUploaderOpen } = useStudio();
+  const timing = botIntervalMinutes === 1 ? "every minute" : botIntervalMinutes === 1440 ? "every 24 hours" : "every two days";
   const queued = queuedProjects(projects);
   const published = publishedProjects(projects);
   const next = nextRelease(projects);
@@ -17,13 +18,13 @@ export default function Overview() {
     <div className="metric-grid">
       <div className="metric-card"><div className="metric-top"><span>PROJECTS IN QUEUE</span><FolderKanban size={18}/></div><strong>{String(queued.length).padStart(2,"0")}</strong><small>{queued.length ? "Waiting for release" : "No project uploaded yet"}</small><span className="metric-edge"/></div>
       <div className="metric-card"><div className="metric-top"><span>PUBLISHED PROJECTS</span><GitBranch size={18}/></div><strong>{String(published.length).padStart(2,"0")}</strong><small>Real GitHub releases</small><span className="metric-edge"/></div>
-      <div className="metric-card"><div className="metric-top"><span>PUBLISH INTERVAL</span><Clock3 size={18}/></div><strong>48<span className="unit"> HRS</span></strong><small>One project per cycle</small><span className="metric-edge"/></div>
+      <div className="metric-card"><div className="metric-top"><span>PUBLISH INTERVAL</span><Clock3 size={18}/></div><strong>{botIntervalMinutes === 1 ? "01" : botIntervalMinutes === 1440 ? "24" : "48"}<span className="unit"> {botIntervalMinutes === 1 ? "MIN" : "HRS"}</span></strong><small>One project per cycle</small><span className="metric-edge"/></div>
       <div className="metric-card"><div className="metric-top"><span>SYSTEM CHECK</span><Radio size={18}/></div><strong>10:00<span className="unit"> IST</span></strong><small>Every day in the cloud</small><span className="metric-edge"/></div>
     </div>
     <div className="command-grid">
       <div className="command-side">
         <section className="glass-panel health-panel"><SectionHeader eyebrow="01 / SYSTEM" title="System pulse" /><div className="system-state"><span className={`state-orb ${connection.githubConnected ? "state-on" : ""}`}><Radio size={23}/></span><div><strong>{connection.githubConnected ? "Publishing connected" : "Connection required"}</strong><p>{connection.githubConnected ? "GitHub is ready for scheduled releases." : "The GitHub connection needs attention."}</p></div></div><div className="system-list"><div><span><i className={connection.storageReady ? "green" : ""}/> Project storage</span><strong>{connection.storageReady ? "READY" : "CHECKING"}</strong></div><div><span><i className={connection.githubConnected ? "green" : ""}/> GitHub publishing</span><strong>{connection.githubConnected ? "READY" : "PENDING"}</strong></div><div><span><i className="green"/> Portfolio target</span><strong>SET</strong></div></div><Link className="panel-link" href="/settings">OPEN CONNECTIONS <ArrowUpRight size={15}/></Link></section>
-        <section className="glass-panel cycle-panel"><SectionHeader eyebrow="02 / RHYTHM" title="Release cadence" /><div className="cycle-visual"><div className="cycle-track"><span>01</span><span>02</span><span>03</span></div><div className="cycle-steps"><span>UPLOAD</span><span>QUEUE</span><span>PUBLISH</span></div></div><p>One real project every two days. The bot checks the queue each morning.</p><Link className="panel-link" href="/schedule">SEE SCHEDULE <ArrowUpRight size={15}/></Link></section>
+        <section className="glass-panel cycle-panel"><SectionHeader eyebrow="02 / RHYTHM" title="Release cadence" /><div className="cycle-visual"><div className="cycle-track"><span>01</span><span>02</span><span>03</span></div><div className="cycle-steps"><span>UPLOAD</span><span>QUEUE</span><span>PUBLISH</span></div></div><p>One real project {timing}. The bot checks the cloud every minute.</p><Link className="panel-link" href="/schedule">SEE SCHEDULE <ArrowUpRight size={15}/></Link></section>
       </div>
       <section className="globe-panel">
         <div className="globe-panel-head"><span className="eyebrow">GLOBAL DEPLOYMENT / LIVE PIPELINE</span><span className="tiny-cross">✦</span></div>
