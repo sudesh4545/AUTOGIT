@@ -13,6 +13,7 @@ const USER_EMAIL_HEADER = "oai-authenticated-user-email";
 const USER_FULL_NAME_HEADER = "oai-authenticated-user-full-name";
 const USER_FULL_NAME_ENCODING_HEADER =
   "oai-authenticated-user-full-name-encoding";
+const CLOUDFLARE_ACCESS_EMAIL_HEADER = "cf-access-authenticated-user-email";
 const PERCENT_ENCODED_UTF8 = "percent-encoded-utf-8";
 const SIGN_IN_PATH = "/signin";
 const SIGN_OUT_PATH = "/signout";
@@ -22,6 +23,15 @@ export async function getWorkspaceUser(): Promise<WorkspaceUser | null> {
   const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);
+  const cloudflareEmail = requestHeaders.get(CLOUDFLARE_ACCESS_EMAIL_HEADER);
+  if (cloudflareEmail) {
+    return {
+      userId: `cloudflare:${cloudflareEmail}`,
+      displayName: cloudflareEmail,
+      email: cloudflareEmail,
+      fullName: null,
+    };
+  }
   if (!userId || !email) return null;
 
   const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);

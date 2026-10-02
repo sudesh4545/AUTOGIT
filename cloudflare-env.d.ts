@@ -5,5 +5,7 @@ declare namespace Cloudflare {
     GITHUB_TOKEN?: string;
     GITHUB_OWNER?: string;
     PORTFOLIO_REPO?: string;
+    PUBLISH_INTERVAL_MINUTES?: string;
+    PORTFOLIO_REPO?: string;
   }
 }
