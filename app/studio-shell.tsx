@@ -81,7 +81,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         <div className="topbar-actions"><span className="topbar-live"><i /> {botEnabled === false ? "BOT PAUSED" : connection.githubConnected ? "SYSTEM ONLINE" : "SETUP REQUIRED"}</span><button className="topbar-add" onClick={() => setUploaderOpen(true)}><Plus size={17}/><span>ADD PROJECT</span></button></div>
       </header>
       <main className="page-main">
-        {error && <div className="site-alert" role="alert">{error} <a href={`/signin-with-chatgpt?return_to=${encodeURIComponent(pathname)}`}>Sign in</a></div>}
+        {error && <div className="site-alert" role="alert">{error} <a href={`/signin?return_to=${encodeURIComponent(pathname)}`}>Sign in</a></div>}
         {(loading || navigating) && <div className="loading-line navigation-line" aria-label={navigating ? "Opening page" : "Loading studio data"} />}
         {children}
       </main>

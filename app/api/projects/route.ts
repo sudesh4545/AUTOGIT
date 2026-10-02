@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "../../chatgpt-auth";
+import { getWorkspaceUser } from "../../workspace-auth";
 import { getDb } from "../../../db";
 import { projectFiles, projects } from "../../../db/schema";
 
@@ -9,7 +9,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const excluded = /(^|\/)(?:\.git|node_modules|dist|build|\.next|\.env(?:\..*)?|\.wrangler)(?:\/|$)/i;
 
 export async function GET() {
-  if (!await getChatGPTUser()) return Response.json({ error: "Sign in to manage projects." }, { status: 401 });
+  if (!await getWorkspaceUser()) return Response.json({ error: "Sign in to manage projects." }, { status: 401 });
   try {
     const db = getDb();
     const rows = await db.select().from(projects).orderBy(desc(projects.createdAt)).limit(100);
@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!await getChatGPTUser()) return Response.json({ error: "Sign in to manage projects." }, { status: 401 });
+  if (!await getWorkspaceUser()) return Response.json({ error: "Sign in to manage projects." }, { status: 401 });
   if (!env.BUCKET) return Response.json({ error: "Project storage is unavailable." }, { status: 503 });
   try {
     if (Number(request.headers.get("content-length") || 0) > 15 * 1024 * 1024) return Response.json({ error: "Project folder must be under 10 MB." }, { status: 413 });
@@ -66,3 +66,4 @@ export async function POST(request: Request) {
     return Response.json({ error: error instanceof Error ? error.message : "Could not upload project." }, { status: 400 });
   }
 }
+

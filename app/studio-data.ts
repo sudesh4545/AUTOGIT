@@ -39,3 +39,4 @@ export function activityDays(projects: Project[], count = 14) {
   }
   return days;
 }
+

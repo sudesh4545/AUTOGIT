@@ -1,4 +1,4 @@
-// Vendored from @openai/sites-vite-plugin 0.2.0 (openai/sites#9).
+// Local runtime integration for authentication and deployment metadata.
 // See sites-vite-plugin.LICENSE for the upstream MIT license.
 import { access, cp, mkdir, rm } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -12,8 +12,8 @@ const localCookieName = "__sites_local_auth";
 const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 const localAddresses = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 const authPaths = new Set([
-  "/signin-with-chatgpt",
-  "/signout-with-chatgpt",
+  "/signin",
+  "/signout",
   "/callback",
 ]);
 
@@ -102,8 +102,8 @@ export function sites({ mockAuth = true } = {}): Plugin {
           return;
         }
 
-        const signIn = url.pathname === "/signin-with-chatgpt";
-        const signOut = url.pathname === "/signout-with-chatgpt";
+        const signIn = url.pathname === "/signin";
+        const signOut = url.pathname === "/signout";
         if (!signIn && !signOut) {
           if (signInCookies.length === 1 && signInCookies[0] === "1") {
             setHeader(request, "oai-authenticated-user-id", localUserId);
@@ -173,8 +173,8 @@ export function sites({ mockAuth = true } = {}): Plugin {
     async closeBundle() {
       if (command !== "build") return;
 
-      const outputDirectory = resolve(root, "dist", ".openai");
-      const hostingConfig = resolve(root, ".openai", "hosting.json");
+      const outputDirectory = resolve(root, "dist", ".autogit");
+      const hostingConfig = resolve(root, ".autogit", "hosting.json");
       const drizzleSource = resolve(root, "drizzle");
 
       await rm(outputDirectory, { recursive: true, force: true });
