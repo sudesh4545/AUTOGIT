@@ -14,6 +14,7 @@ const USER_FULL_NAME_HEADER = "oai-authenticated-user-full-name";
 const USER_FULL_NAME_ENCODING_HEADER =
   "oai-authenticated-user-full-name-encoding";
 const CLOUDFLARE_ACCESS_EMAIL_HEADER = "cf-access-authenticated-user-email";
+const AUTOGIT_ACCESS_KEY_HEADER = "x-autogit-key";
 const PERCENT_ENCODED_UTF8 = "percent-encoded-utf-8";
 const SIGN_IN_PATH = "/signin";
 const SIGN_OUT_PATH = "/signout";
@@ -24,12 +25,21 @@ export async function getWorkspaceUser(): Promise<WorkspaceUser | null> {
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);
   const cloudflareEmail = requestHeaders.get(CLOUDFLARE_ACCESS_EMAIL_HEADER);
+  const accessKey = requestHeaders.get(AUTOGIT_ACCESS_KEY_HEADER);
   if (cloudflareEmail) {
     return {
       userId: `cloudflare:${cloudflareEmail}`,
       displayName: cloudflareEmail,
       email: cloudflareEmail,
       fullName: null,
+    };
+  }
+  if (accessKey && process.env.AUTOGIT_ACCESS_KEY && accessKey === process.env.AUTOGIT_ACCESS_KEY) {
+    return {
+      userId: "autogit:owner",
+      displayName: "Workspace owner",
+      email: "owner@autogit.local",
+      fullName: "Workspace owner",
     };
   }
   if (!userId || !email) return null;

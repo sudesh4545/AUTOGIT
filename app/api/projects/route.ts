@@ -5,7 +5,8 @@ import { getDb } from "../../../db";
 import { projectFiles, projects } from "../../../db/schema";
 
 const MAX_FILES = 40;
-const MAX_BYTES = 10 * 1024 * 1024;
+// D1 stores the queued source files directly. Keep a practical free-tier cap.
+const MAX_BYTES = 5 * 1024 * 1024;
 const excluded = /(^|\/)(?:\.git|node_modules|dist|build|\.next|\.env(?:\..*)?|\.wrangler)(?:\/|$)/i;
 
 export async function GET() {
@@ -21,9 +22,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!await getWorkspaceUser()) return Response.json({ error: "Sign in to manage projects." }, { status: 401 });
-  if (!env.BUCKET) return Response.json({ error: "Project storage is unavailable." }, { status: 503 });
   try {
-    if (Number(request.headers.get("content-length") || 0) > 15 * 1024 * 1024) return Response.json({ error: "Project folder must be under 10 MB." }, { status: 413 });
+    if (Number(request.headers.get("content-length") || 0) > 8 * 1024 * 1024) return Response.json({ error: "Project folder must be under 5 MB." }, { status: 413 });
     const payload = await request.json() as { title?: string; description?: string; collection?: string; technologies?: string; demoUrl?: string; files?: { path: string; content: string; size: number }[] };
     const title = String(payload.title || "").trim().slice(0, 80);
     const description = String(payload.description || "").trim().slice(0, 500);
@@ -46,15 +46,16 @@ export async function POST(request: Request) {
       if (bytes.length !== file.size) throw new Error(`Invalid file size: ${path}`);
       return { file, path, bytes };
     });
-    if (total > MAX_BYTES) return Response.json({ error: "Project folder must be under 10 MB." }, { status: 400 });
+    if (total > MAX_BYTES) return Response.json({ error: "Project folder must be under 5 MB." }, { status: 400 });
     const id = crypto.randomUUID();
     const slug = title.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "mini-project";
     const db = getDb();
     const now = new Date().toISOString();
     await db.insert(projects).values({ id, title, slug, description, collection, technologies: JSON.stringify(technologies), demoUrl: demoUrl || null, status: "uploading", createdAt: now, fileCount: entries.length });
     try {
-      for (const {path,bytes} of entries) await env.BUCKET.put(`projects/${id}/${path}`, bytes);
-      await db.insert(projectFiles).values(entries.map(({file,path}) => ({ id: crypto.randomUUID(), projectId:id, path, size:file.size })));
+      await db.insert(projectFiles).values(entries.map(({file,path}) => ({
+        id: crypto.randomUUID(), projectId:id, path, size:file.size, content:file.content,
+      })));
       await db.update(projects).set({ status:"queued" }).where(eq(projects.id,id));
     } catch {
       await db.update(projects).set({ status:"failed", error:"Upload did not complete. Please remove this entry and upload again." }).where(eq(projects.id,id));

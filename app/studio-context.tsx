@@ -31,6 +31,8 @@ type StudioState = {
   error: string;
   uploaderOpen: boolean;
   setUploaderOpen: (open: boolean) => void;
+  accessKey: string;
+  setAccessKey: (key: string) => void;
   refresh: () => Promise<void>;
   upload: (details: {
     title: string;
@@ -44,11 +46,16 @@ type StudioState = {
 
 const StudioContext = createContext<StudioState | null>(null);
 
+export function workspaceHeaders(headers: HeadersInit = {}) {
+  const key = typeof window === "undefined" ? "" : window.sessionStorage.getItem("autogit-access-key") || "";
+  return key ? { ...headers, "X-AutoGit-Key": key } : headers;
+}
+
 async function fetchWithTimeout(url: string) {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 4500);
   try {
-    return await fetch(url, { cache: "no-store", signal: controller.signal });
+    return await fetch(url, { cache: "no-store", signal: controller.signal, headers: workspaceHeaders() });
   } finally {
     window.clearTimeout(timer);
   }
@@ -71,6 +78,14 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const [botEnabled] = useState<boolean | null>(true);
   const [error, setError] = useState("");
   const [uploaderOpen, setUploaderOpen] = useState(false);
+  const [accessKey, setAccessKeyState] = useState("");
+
+  const setAccessKey = useCallback((key: string) => {
+    const value = key.trim();
+    if (value) window.sessionStorage.setItem("autogit-access-key", value);
+    else window.sessionStorage.removeItem("autogit-access-key");
+    setAccessKeyState(value);
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -80,7 +95,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       ]);
       const projectData = await projectResponse.json() as { projects?: Project[]; error?: string };
       const statusData = await statusResponse.json() as Partial<Connection>;
-      if (!projectResponse.ok) throw new Error(projectData.error || "Project data is unavailable.");
+      if (!projectResponse.ok) throw new Error(projectResponse.status === 401 ? "Unlock this private workspace to manage projects and the bot." : projectData.error || "Project data is unavailable.");
       setProjects(projectData.projects || []);
       if (statusResponse.ok) setConnection({
         githubConnected: Boolean(statusData.githubConnected),
@@ -105,8 +120,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const upload: StudioState["upload"] = async details => {
     const total = details.files.reduce((sum, file) => sum + file.size, 0);
     if (!details.files.length) throw new Error("Choose a project folder.");
-    if (details.files.length > 40 || total > 10 * 1024 * 1024) {
-      throw new Error("Choose up to 40 files under 10 MB total.");
+    if (details.files.length > 40 || total > 5 * 1024 * 1024) {
+      throw new Error("Choose up to 40 files under 5 MB total.");
     }
     const files = await Promise.all(details.files.map(async file => {
       const bytes = new Uint8Array(await file.arrayBuffer());
@@ -118,7 +133,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     }));
     const response = await fetch("/api/projects", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: workspaceHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ ...details, files }),
     });
     const data = await response.json() as { project?: Project; error?: string };
@@ -128,6 +143,6 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   };
 
   return <StudioContext.Provider value={{
-    projects, connection, botEnabled, loading, error, uploaderOpen, setUploaderOpen, refresh, upload,
+    projects, connection, botEnabled, loading, error, uploaderOpen, setUploaderOpen, accessKey, setAccessKey, refresh, upload,
   }}>{children}</StudioContext.Provider>;
 }

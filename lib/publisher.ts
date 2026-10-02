@@ -70,14 +70,12 @@ async function ensureRepo(name: string, title: string) {
 }
 
 async function publishFiles(project: Project, repo: string) {
-  if (!env.BUCKET) throw new Error("Project file storage is missing.");
   const db = getDb();
   const files = await db.select().from(projectFiles).where(eq(projectFiles.projectId, project.id));
   if (files.length !== project.fileCount || !files.length) throw new Error("Project folder is incomplete.");
   for (const file of files) {
-    const object = await env.BUCKET.get(`projects/${project.id}/${file.path}`);
-    if (!object) throw new Error(`Missing uploaded file: ${file.path}`);
-    const content = base64(new Uint8Array(await object.arrayBuffer()));
+    if (!file.content) throw new Error(`Missing uploaded file: ${file.path}`);
+    const content = file.content;
     const current = await getContent(repo, file.path);
     await gh(`/repos/${owner()}/${repo}/contents/${file.path.split("/").map(encodeURIComponent).join("/")}`, {
       method: "PUT",

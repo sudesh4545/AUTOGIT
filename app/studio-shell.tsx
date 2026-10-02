@@ -27,7 +27,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [, startTransition] = useTransition();
-  const { connection, botEnabled, error, loading, setUploaderOpen } = useStudio();
+  const { connection, botEnabled, error, loading, setUploaderOpen, accessKey, setAccessKey, refresh } = useStudio();
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [accessInput, setAccessInput] = useState(accessKey);
   const active = navigation.find(item => item.href === pathname) || { label: pathname === "/github" ? "GitHub" : pathname === "/portfolio" ? "Portfolio" : "Overview" };
 
   useEffect(() => { setMenuOpen(false); setNavigating(false); }, [pathname]);
@@ -81,13 +83,22 @@ function ShellContent({ children }: { children: React.ReactNode }) {
         <div className="topbar-actions"><span className="topbar-live"><i /> {botEnabled === false ? "BOT PAUSED" : connection.githubConnected ? "SYSTEM ONLINE" : "SETUP REQUIRED"}</span><button className="topbar-add" onClick={() => setUploaderOpen(true)}><Plus size={17}/><span>ADD PROJECT</span></button></div>
       </header>
       <main className="page-main">
-        {error && <div className="site-alert" role="alert">{error} <a href={`/signin?return_to=${encodeURIComponent(pathname)}`}>Sign in</a></div>}
+        {error && <div className="site-alert" role="alert">{error} <button className="site-alert-action" onClick={() => setAccessOpen(true)}>UNLOCK</button></div>}
         {(loading || navigating) && <div className="loading-line navigation-line" aria-label={navigating ? "Opening page" : "Loading studio data"} />}
         {children}
       </main>
       <footer className="studio-footer"><span>© 2026 AUTO<span>GIT</span> STUDIO</span><span>BUILT TO SHIP REAL WORK</span><span>PRIVATE WORKSPACE</span></footer>
     </div>
     <UploadDialog />
+    <Dialog open={accessOpen} onOpenChange={setAccessOpen}>
+      <DialogContent className="upload-dialog access-dialog">
+        <DialogHeader><span className="eyebrow">PRIVATE / WORKSPACE</span><DialogTitle className="dialog-heading">Unlock controls</DialogTitle><DialogDescription>Enter your AutoGit access key. It stays only in this browser session.</DialogDescription></DialogHeader>
+        <form className="upload-form" onSubmit={event => { event.preventDefault(); setAccessKey(accessInput); setAccessOpen(false); void refresh(); }}>
+          <label>Workspace access key<input autoFocus required type="password" value={accessInput} onChange={event => setAccessInput(event.target.value)} placeholder="Enter access key" /></label>
+          <button className="red-button full-width">UNLOCK WORKSPACE <ArrowUpRight size={16}/></button>
+        </form>
+      </DialogContent>
+    </Dialog>
   </div>;
 }
 
@@ -134,7 +145,7 @@ function UploadDialog() {
         <label className="drop-zone">
           <UploadCloud size={25} />
           <strong>{files.length ? `${files.length} files selected` : "Choose a project folder"}</strong>
-          <small>Maximum 40 files · 10 MB total · no secrets or dependencies</small>
+          <small>Maximum 40 files · 5 MB total · no secrets or dependencies</small>
           <input type="file" multiple {...{ webkitdirectory: "" }} onChange={event => setFiles(Array.from(event.target.files || []).filter(file => !/(^|\/)(node_modules|\.git|dist|build|\.next|\.env(?:\..*)?)(\/|$)/i.test(file.webkitRelativePath)))} />
         </label>
         {message && <p className="form-error" role="alert">{message}</p>}

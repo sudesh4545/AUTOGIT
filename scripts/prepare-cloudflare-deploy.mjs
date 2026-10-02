@@ -14,7 +14,8 @@ if (!database) throw new Error("The generated Worker config has no DB binding.")
 
 database.database_id = databaseId;
 database.database_name = "autogit-d1";
-config.r2_buckets = [{ binding: "BUCKET", bucket_name: "autogit-r2" }];
+// Queued source files are stored in D1, so R2 is not required (or billed).
+config.r2_buckets = [];
 config.triggers = { crons: ["30 4 * * *"] };
 config.vars = {
   ...(config.vars || {}),

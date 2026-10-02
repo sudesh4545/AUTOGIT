@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { PageHeading, SectionHeader } from "../dashboard-parts";
 import { nextRelease, queuedProjects } from "../studio-data";
 import { useStudio } from "../studio-context";
+import { workspaceHeaders } from "../studio-context";
 
 type BotState = {
   control: { enabled: boolean; lastRunAt: string | null; lastStatus: string | null; lastMessage: string | null };
@@ -27,7 +28,7 @@ export default function BotPage() {
   const next = nextRelease(projects);
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/bot", { cache: "no-store" });
+    const response = await fetch("/api/bot", { cache: "no-store", headers: workspaceHeaders() });
     const data = await response.json() as BotState & { error?: string };
     if (!response.ok) throw new Error(data.error || "Bot status is unavailable.");
     setState(data);
@@ -39,7 +40,7 @@ export default function BotPage() {
   async function setEnabled(enabled: boolean) {
     setBusy(true); setError(""); setMessage("");
     try {
-      const response = await fetch("/api/bot", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled }) });
+      const response = await fetch("/api/bot", { method: "PATCH", headers: workspaceHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ enabled }) });
       const data = await response.json() as BotState & { error?: string };
       if (!response.ok) throw new Error(data.error || "Could not change bot state.");
       setState(data);
@@ -52,7 +53,7 @@ export default function BotPage() {
   async function runNow() {
     setBusy(true); setError(""); setMessage("");
     try {
-      const response = await fetch("/api/bot/run", { method: "POST" });
+      const response = await fetch("/api/bot/run", { method: "POST", headers: workspaceHeaders() });
       const data = await response.json() as { status?: string; message?: string; error?: string };
       if (!response.ok) throw new Error(data.error || data.message || "Bot check failed.");
       setMessage(data.message || `Check finished: ${data.status || "complete"}.`);

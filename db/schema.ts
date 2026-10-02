@@ -21,6 +21,9 @@ export const projectFiles = sqliteTable("project_files", {
   projectId: text("project_id").notNull().references(() => projects.id),
   path: text("path").notNull(),
   size: integer("size").notNull(),
+  // Kept in D1 so the hosted bot stays entirely within Cloudflare's free tier.
+  // Base64 makes this portable across the Worker and GitHub APIs.
+  content: text("content").notNull().default(""),
 });
 
 export const botControl = sqliteTable("bot_control", {

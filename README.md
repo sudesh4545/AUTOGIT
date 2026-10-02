@@ -5,7 +5,7 @@ AutoGit Studio is Sudesh Mehar's private project queue. Upload a small or mini p
 ## What is implemented
 
 - Responsive private dashboard with Overview, Projects, Schedule, Activity and Settings views.
-- Folder upload to R2 (maximum 40 files and 10 MB per project), metadata and status in D1.
+- Folder upload to D1 (maximum 40 files and 5 MB per project), including metadata, queued source files and status.
 - Private publishing endpoint at `POST /api/bot`.
 - GitHub repository creation, source file upload and portfolio feed sync.
 - Honest release history: runs without a due project make no commit.
@@ -26,7 +26,7 @@ Local sign-in is available at `/signin?return_to=/`. Production uses the configu
 
 ## Cloud configuration
 
-The dashboard uses D1 and R2 declared in `.autogit/hosting.json`. Configure the following runtime environment variables in the hosting control plane:
+The dashboard uses D1 declared in `.autogit/hosting.json`. Configure the following runtime environment variables in the hosting control plane:
 
 | Key | Purpose |
 | --- | --- |

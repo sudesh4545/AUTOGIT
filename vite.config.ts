@@ -8,7 +8,7 @@ import { connectorPreview } from "./build/connector-preview-plugin.mjs";
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
 
-const { d1, r2 } = hostingConfig;
+const { d1 } = hostingConfig;
 
 // Some sandboxed environments block FSEvents, so previews need polling for HMR.
 const isSandboxedPreview = process.env.PREVIEW_SANDBOX === "seatbelt";
@@ -26,14 +26,7 @@ const localBindingConfig = {
         },
       ]
     : [],
-  r2_buckets: r2
-    ? [
-        {
-          binding: r2,
-          bucket_name: "autogit-r2",
-        },
-      ]
-    : [],
+  r2_buckets: [],
 };
 
 export default defineConfig(async ({ command }) => {
