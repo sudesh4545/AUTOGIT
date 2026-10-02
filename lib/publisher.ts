@@ -70,6 +70,11 @@ async function ensureRepo(name: string, title: string) {
   });
 }
 
+async function ensurePages(repo: string) {
+  const response = await fetch(`${api}/repos/${owner()}/${repo}/pages`, { method: "POST", headers: headers(), body: JSON.stringify({ source: { branch: "main", path: "/" } }) });
+  if (!response.ok && ![409, 422].includes(response.status)) throw new Error(`GitHub Pages setup failed: ${response.status}`);
+}
+
 async function publishFiles(project: Project, repo: string) {
   const db = getDb();
   const files = await db.select().from(projectFiles).where(eq(projectFiles.projectId, project.id));
@@ -85,7 +90,7 @@ async function publishFiles(project: Project, repo: string) {
   }
 }
 
-async function syncPortfolio(project: Project, githubUrl: string) {
+async function syncPortfolio(project: Project, githubUrl: string, demoUrl: string) {
   const repo = portfolioRepo();
   const jsonPath = "src/data/autogit-projects.json";
   const sourcePath = "src/data/portfolio.ts";
@@ -99,7 +104,7 @@ async function syncPortfolio(project: Project, githubUrl: string) {
     description: project.description,
     status: "published",
     technologies: JSON.parse(project.technologies),
-    demoUrl: project.demoUrl,
+    demoUrl,
     githubUrl,
   });
   await putContent(repo, jsonPath, `${JSON.stringify(feed, null, 2)}\n`, `Add ${project.title} to portfolio projects`);
@@ -148,8 +153,10 @@ async function publishNextProject() {
     await ensureRepo(repo, project.title);
     await publishFiles(project, repo);
     const githubUrl = `https://github.com/${owner()}/${repo}`;
-    await syncPortfolio(project, githubUrl);
-    await db.update(projects).set({ status: "published", githubUrl, publishedAt: new Date().toISOString() }).where(eq(projects.id, project.id));
+    await ensurePages(repo);
+    const demoUrl = project.demoUrl || `https://${owner()}.github.io/${repo}/`;
+    await syncPortfolio(project, githubUrl, demoUrl);
+    await db.update(projects).set({ status: "published", githubUrl, demoUrl, publishedAt: new Date().toISOString() }).where(eq(projects.id, project.id));
     return { status: "published", project: project.title, projectId: project.id, githubUrl, message: `${project.title} published to GitHub and portfolio.` };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Publishing failed.";
