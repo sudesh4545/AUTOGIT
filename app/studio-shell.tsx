@@ -30,6 +30,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
   const { connection, botEnabled, error, loading, setUploaderOpen, accessKey, setAccessKey, refresh } = useStudio();
   const [accessOpen, setAccessOpen] = useState(false);
   const [accessInput, setAccessInput] = useState(accessKey);
+  const [accessError, setAccessError] = useState("");
   const active = navigation.find(item => item.href === pathname) || { label: pathname === "/github" ? "GitHub" : pathname === "/portfolio" ? "Portfolio" : "Overview" };
 
   useEffect(() => { setMenuOpen(false); setNavigating(false); }, [pathname]);
@@ -90,11 +91,12 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       <footer className="studio-footer"><span>© 2026 AUTO<span>GIT</span> STUDIO</span><span>BUILT TO SHIP REAL WORK</span><span>PRIVATE WORKSPACE</span></footer>
     </div>
     <UploadDialog />
-    <Dialog open={accessOpen} onOpenChange={setAccessOpen}>
+    <Dialog open={accessOpen} onOpenChange={open => { setAccessOpen(open); if (!open) setAccessError(""); }}>
       <DialogContent className="upload-dialog access-dialog">
         <DialogHeader><span className="eyebrow">PRIVATE / WORKSPACE</span><DialogTitle className="dialog-heading">Unlock controls</DialogTitle><DialogDescription>Enter your AutoGit access key. It stays only in this browser session.</DialogDescription></DialogHeader>
-        <form className="upload-form" onSubmit={event => { event.preventDefault(); setAccessKey(accessInput); setAccessOpen(false); void refresh(); }}>
+        <form className="upload-form" onSubmit={async event => { event.preventDefault(); const value = accessInput.trim(); setAccessError(""); const response = await fetch("/api/status", { cache: "no-store", headers: { "X-AutoGit-Key": value } }); if (!response.ok) { setAccessError("Access key is incorrect. Check capitalization and try again."); return; } setAccessKey(value); setAccessOpen(false); void refresh(); }}>
           <label>Workspace access key<input autoFocus required type="password" value={accessInput} onChange={event => setAccessInput(event.target.value)} placeholder="Enter access key" /></label>
+          {accessError && <div className="bot-feedback error" role="alert">{accessError}</div>}
           <button className="red-button full-width">UNLOCK WORKSPACE <ArrowUpRight size={16}/></button>
         </form>
       </DialogContent>
