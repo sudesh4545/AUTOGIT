@@ -10,6 +10,7 @@ export const projects = sqliteTable("projects", {
   demoUrl: text("demo_url"),
   status: text("status").notNull().default("queued"),
   createdAt: text("created_at").notNull(),
+  scheduledAt: text("scheduled_at"),
   publishedAt: text("published_at"),
   githubUrl: text("github_url"),
   error: text("error"),

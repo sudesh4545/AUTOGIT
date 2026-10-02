@@ -332,6 +332,32 @@ a { color: inherit; }
 .schedule-empty strong { margin-top: 13px; font-size: 14px; }
 .schedule-empty p { color: #8497aa; font-size: 12px; }
 .schedule-note { color: #788da4; font-size: 11px; margin: 17px 0 0; }
+.schedule-summary-simple { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+.schedule-summary-simple > div { padding: 16px 18px; border: 1px solid #ffffff18; border-radius: 12px; background: #111827b8; }
+.schedule-summary-simple span { display: block; color: #72869c; font-size: 9px; font-weight: 800; letter-spacing: 1.2px; margin-bottom: 7px; }
+.schedule-summary-simple strong { color: #f5f8ff; font-size: 15px; }
+.calendar-panel { padding: 22px; margin-bottom: 16px; }
+.calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.calendar-head h2 { margin: 5px 0 0; font-size: 23px; }
+.calendar-head > div:last-child { display: flex; gap: 7px; }
+.calendar-head button { min-height: 36px; padding: 0 12px; display: grid; place-items: center; color: #dce9f7; border: 1px solid #ffffff20; border-radius: 8px; background: #111a29; }
+.calendar-weekdays,.calendar-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); }
+.calendar-weekdays span { padding: 8px; color: #71869b; font-size: 9px; font-weight: 800; text-align: center; letter-spacing: 1px; }
+.calendar-day { min-height: 92px; padding: 9px; border: 1px solid #ffffff10; background: #0d1522a8; }
+.calendar-day > span { display: block; color: #d8e5f2; font-size: 12px; font-weight: 800; margin-bottom: 6px; }
+.calendar-day small { display: block; overflow: hidden; padding: 4px 6px; margin-top: 4px; color: #ffd1d9; background: #ff466524; border-left: 2px solid var(--red); border-radius: 4px; font-size: 9px; white-space: nowrap; text-overflow: ellipsis; }
+.calendar-day.muted { opacity: .32; }
+.easy-schedule-list { padding: 23px; }
+.easy-schedule-row { display: grid; grid-template-columns: 42px minmax(180px,1fr) minmax(230px,.9fr) auto auto; align-items: center; gap: 14px; padding: 15px 0; border-top: 1px solid #ffffff14; }
+.schedule-number { color: #ff7b8d; font: 800 12px var(--font-space); }
+.schedule-project-name strong,.schedule-project-name small { display: block; }
+.schedule-project-name small { color: #8397ab; margin-top: 4px; font-size: 11px; }
+.easy-schedule-row label span { display: block; color: #879aaf; font-size: 9px; font-weight: 800; letter-spacing: .8px; margin-bottom: 5px; }
+.easy-schedule-row input { width: 100%; min-height: 40px; padding: 8px 10px; color: #f4f8ff; color-scheme: dark; border: 1px solid #ffffff24; border-radius: 8px; background: #0c1420; }
+.schedule-help { display: flex; align-items: center; gap: 13px; margin-top: 15px; padding: 15px 18px; color: #a9bbcd; border: 1px solid #63c5ff38; border-radius: 12px; background: #15314a35; }
+.schedule-help div { flex: 1; }
+.schedule-help strong { color: #eaf6ff; }
+.schedule-help p { margin: 3px 0 0; font-size: 12px; }
 
 /* Activity */
 .activity-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin-bottom: 14px; }
@@ -426,6 +452,9 @@ a { color: inherit; }
   .project-identity { grid-column: 1 / -1; }
   .project-entry > .status-tag { justify-self: start; }
   .schedule-top-grid, .settings-grid { grid-template-columns: 1fr; }
+  .schedule-summary-simple { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .easy-schedule-row { grid-template-columns: 34px 1fr; }
+  .easy-schedule-row label,.easy-schedule-row button,.easy-schedule-row .status-tag { grid-column: 2; }
 }
 @media (max-width: 650px) {
   .topbar-live { display: none; }
@@ -446,6 +475,8 @@ a { color: inherit; }
   .project-summary span { font-size: 8px; }
   .project-summary strong { font-size: 28px; }
   .projects-controls { align-items: start; flex-direction: column; }
+  .calendar-day { min-height: 64px; padding: 5px; }
+  .calendar-day small { font-size: 0; height: 7px; padding: 0; }
   .search-box { width: 100%; }
   .project-tab-list { width: 100%; overflow-x: auto; }
   .project-tab-list button { white-space: nowrap; padding: 0 9px; font-size: 11px; }

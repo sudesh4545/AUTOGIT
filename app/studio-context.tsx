@@ -9,6 +9,7 @@ export type Project = {
   collection: "small" | "mini";
   status: "queued" | "uploading" | "publishing" | "published" | "failed";
   createdAt: string;
+  scheduledAt: string | null;
   publishedAt: string | null;
   githubUrl: string | null;
   error: string | null;
@@ -48,7 +49,7 @@ type StudioState = {
 const StudioContext = createContext<StudioState | null>(null);
 
 export function workspaceHeaders(headers: HeadersInit = {}) {
-  const key = typeof window === "undefined" ? "" : window.sessionStorage.getItem("autogit-access-key") || "";
+  const key = typeof window === "undefined" ? "" : window.localStorage.getItem("autogit-access-key") || window.sessionStorage.getItem("autogit-access-key") || "";
   return key ? { ...headers, "X-AutoGit-Key": key } : headers;
 }
 
@@ -84,9 +85,15 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
 
   const setAccessKey = useCallback((key: string) => {
     const value = key.trim();
-    if (value) window.sessionStorage.setItem("autogit-access-key", value);
-    else window.sessionStorage.removeItem("autogit-access-key");
+    if (value) window.localStorage.setItem("autogit-access-key", value);
+    else window.localStorage.removeItem("autogit-access-key");
     setAccessKeyState(value);
+  }, []);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("autogit-access-key") || window.sessionStorage.getItem("autogit-access-key") || "";
+    if (saved) window.localStorage.setItem("autogit-access-key", saved);
+    setAccessKeyState(saved);
   }, []);
 
   const refresh = useCallback(async () => {

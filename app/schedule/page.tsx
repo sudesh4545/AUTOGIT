@@ -1,35 +1,72 @@
 "use client";
 
-import { ArrowUpRight, CalendarClock, Check, Clock3, GitBranch, Plus, Radio } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Plus, Save } from "lucide-react";
 import { PageHeading, StatusTag } from "../dashboard-parts";
-import { nextRelease, publishedProjects, queuedProjects } from "../studio-data";
-import { useStudio } from "../studio-context";
+import { useStudio, workspaceHeaders } from "../studio-context";
 
-function nextCheck(after: number) {
-  const indiaOffset = 5.5 * 60 * 60 * 1000;
-  const localDay = Math.floor((after + indiaOffset) / 86400000);
-  let candidate = localDay * 86400000 + 10 * 60 * 60 * 1000 - indiaOffset;
-  if (candidate <= after) candidate += 86400000;
-  return candidate;
+function inputValue(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function displayTime(value: string | null) {
+  if (!value) return "Not scheduled";
+  return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }).format(new Date(value));
 }
 
 export default function SchedulePage() {
-  const { projects, botEnabled, botIntervalMinutes, setUploaderOpen } = useStudio();
+  const { projects, botEnabled, botIntervalMinutes, setUploaderOpen, refresh } = useStudio();
+  const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState("");
+  const [message, setMessage] = useState("");
   const timing = botIntervalMinutes === 1 ? "1 minute" : botIntervalMinutes === 1440 ? "24 hours" : "2 days";
-  const queued = queuedProjects(projects);
-  const published = publishedProjects(projects);
-  const next = nextRelease(projects);
-  const last = published[0]?.publishedAt ? Date.parse(published[0].publishedAt) : 0;
-  const intervalMs = botIntervalMinutes * 60 * 1000;
-  const firstSlot = nextCheck(Math.max(Date.now(), last ? last + intervalMs - 60 * 1000 : 0));
-  const slots = queued.map((project, index) => ({ project, at: new Date(firstSlot + index * intervalMs) }));
+  const ordered = useMemo(() => [...projects].sort((a, b) => Date.parse(a.scheduledAt || a.publishedAt || a.createdAt) - Date.parse(b.scheduledAt || b.publishedAt || b.createdAt)), [projects]);
+  const start = new Date(month.getFullYear(), month.getMonth(), 1);
+  const gridStart = new Date(start);
+  gridStart.setDate(1 - start.getDay());
+  const days = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    const dayProjects = projects.filter(project => {
+      const value = project.scheduledAt || project.publishedAt;
+      if (!value) return false;
+      const scheduled = new Date(value);
+      return scheduled.getFullYear() === date.getFullYear() && scheduled.getMonth() === date.getMonth() && scheduled.getDate() === date.getDate();
+    });
+    return { date, projects: dayProjects };
+  });
+
+  async function save(projectId: string, fallback: string | null) {
+    const value = edits[projectId] ?? inputValue(fallback);
+    if (!value) { setMessage("Choose a date and time first."); return; }
+    setSaving(projectId); setMessage("");
+    try {
+      const response = await fetch("/api/projects", { method: "PATCH", headers: workspaceHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ projectId, scheduledAt: new Date(value).toISOString() }) });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Schedule update failed.");
+      await refresh();
+      setMessage("Project schedule saved. The bot will publish it at this time.");
+    } catch (cause) { setMessage(cause instanceof Error ? cause.message : "Schedule update failed."); }
+    finally { setSaving(""); }
+  }
+
   return <>
-    <PageHeading eyebrow="AUTOMATION TIMELINE / 03" title="On schedule." accent="Even offline." description={`The cloud checks every minute and publishes at most one real project every ${timing}.`} action={<button className="red-button" onClick={() => setUploaderOpen(true)}><Plus size={17}/> QUEUE PROJECT</button>} />
-    <div className="schedule-top-grid">
-      <section className="glass-panel schedule-hero"><div className="schedule-hero-head"><span className="eyebrow">NEXT DEPLOYMENT WINDOW</span><CalendarClock size={22}/></div><span className="schedule-big">{botEnabled === false ? "PUBLISHING PAUSED" : next.label}</span><p>{botEnabled === false ? "Resume publishing from Bot Control to release queued projects." : next.detail}</p><div className="schedule-sweep" aria-hidden="true"><span/><span/><span/><span/><span/><span/><span/></div><div className="schedule-hero-bottom"><span><i/> {botEnabled === false ? "PUBLISHING PAUSED" : "AUTOMATION ACTIVE"}</span><span>ASIA / KOLKATA</span></div></section>
-      <section className="glass-panel rules-panel"><span className="eyebrow">PUBLISHING RULES</span><h2>Simple, reliable rhythm.</h2><div className="rule-row"><span><Radio size={19}/></span><div><strong>Minute-by-minute cloud check</strong><p>Runs in the cloud even when your laptop is off.</p></div></div><div className="rule-row"><span><Clock3 size={19}/></span><div><strong>{timing} release gap</strong><p>At most one queued project is published each cycle.</p></div></div><div className="rule-row"><span><GitBranch size={19}/></span><div><strong>Two destinations</strong><p>GitHub repository and portfolio collection update together.</p></div></div></section>
-    </div>
-    <section className="glass-panel timeline-panel"><div className="section-header"><div><span className="eyebrow">UPCOMING / PIPELINE</span><h2>Release timeline</h2></div><span className="timeline-count">{queued.length} IN QUEUE</span></div>{slots.length ? <div className="timeline-list">{slots.map(({project,at},index) => <div className="timeline-entry" key={project.id}><span className="timeline-node"><span/></span><span className="timeline-index">{String(index+1).padStart(2,"0")}</span><div><strong>{project.title}</strong><small>{project.collection.toUpperCase()} PROJECT · {project.fileCount} FILES</small></div><time dateTime={at.toISOString()}>EST. {new Intl.DateTimeFormat("en-IN",{timeZone:"Asia/Kolkata",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}).format(at)}</time><StatusTag status={project.status}/></div>)}</div> : <div className="schedule-empty"><Check size={26}/><strong>No upcoming releases</strong><p>Upload a project to populate the timeline.</p><button className="ghost-button" onClick={() => setUploaderOpen(true)}>ADD PROJECT <ArrowUpRight size={15}/></button></div>}</section>
-    <p className="schedule-note">Estimated dates can shift after a failed release or a delayed cloud check. The {timing} gap is enforced from the last successful publication. Change it in Bot Control.</p>
+    <PageHeading eyebrow="SCHEDULE / 03" title="Plan every" accent="project release." description="Choose the exact date and time for each project. The cloud bot checks every minute and publishes automatically." action={<button className="red-button" onClick={() => setUploaderOpen(true)}><Plus size={17}/> ADD PROJECT</button>} />
+    <div className="schedule-summary-simple"><div><span>BOT STATUS</span><strong>{botEnabled === false ? "PAUSED" : "RUNNING"}</strong></div><div><span>AUTO-SPACING</span><strong>{timing.toUpperCase()}</strong></div><div><span>PROJECTS</span><strong>{projects.length}</strong></div><div><span>TIMEZONE</span><strong>INDIA · IST</strong></div></div>
+    <section className="glass-panel calendar-panel">
+      <div className="calendar-head"><div><span className="eyebrow">RELEASE CALENDAR</span><h2>{new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" }).format(month)}</h2></div><div><button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft size={18}/></button><button onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>TODAY</button><button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight size={18}/></button></div></div>
+      <div className="calendar-weekdays">{["SUN","MON","TUE","WED","THU","FRI","SAT"].map(day => <span key={day}>{day}</span>)}</div>
+      <div className="calendar-grid">{days.map(({date,projects:dayProjects}) => <div className={`calendar-day ${date.getMonth() !== month.getMonth() ? "muted" : ""}`} key={date.toISOString()}><span>{date.getDate()}</span>{dayProjects.slice(0,2).map(project => <small key={project.id}>{project.title}</small>)}{dayProjects.length > 2 && <small>+{dayProjects.length - 2} more</small>}</div>)}</div>
+    </section>
+    <section className="glass-panel easy-schedule-list">
+      <div className="section-header"><div><span className="eyebrow">ALL PROJECTS</span><h2>Set date and time</h2></div><span className="timeline-count">{projects.length} TOTAL</span></div>
+      {ordered.length ? ordered.map((project, index) => <div className="easy-schedule-row" key={project.id}><span className="schedule-number">{String(index + 1).padStart(2, "0")}</span><div className="schedule-project-name"><strong>{project.title}</strong><small>{project.status === "published" ? `Published ${displayTime(project.publishedAt)}` : `Currently ${displayTime(project.scheduledAt)}`}</small></div><label><span>Release date & time</span><input type="datetime-local" value={edits[project.id] ?? inputValue(project.scheduledAt)} disabled={project.status === "published" || project.status === "publishing"} onChange={event => setEdits(current => ({ ...current, [project.id]: event.target.value }))}/></label><button className="outline-action" disabled={project.status === "published" || project.status === "publishing" || saving === project.id} onClick={() => void save(project.id, project.scheduledAt)}><Save size={16}/>{saving === project.id ? "SAVING" : "SAVE TIME"}</button><StatusTag status={project.status}/></div>) : <div className="schedule-empty"><CalendarDays size={30}/><strong>No projects uploaded</strong><p>Add your project folders. Every project will appear here with an automatic date that you can change.</p><button className="red-button" onClick={() => setUploaderOpen(true)}><Plus size={16}/> ADD FIRST PROJECT</button></div>}
+      {message && <div className="bot-feedback success" role="status">{message}</div>}
+    </section>
+    <div className="schedule-help"><Check size={18}/><div><strong>How it works</strong><p>Upload → choose date and time → save. The hosted bot checks every minute and publishes to GitHub and Portfolio when that time arrives.</p></div><Clock3 size={20}/></div>
   </>;
 }

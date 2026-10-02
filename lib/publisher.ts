@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, lt, lte, or } from "drizzle-orm";
 import { getDb } from "../db";
 import { botControl, botRuns, projectFiles, projects } from "../db/schema";
 
@@ -142,10 +142,19 @@ export async function setBotEnabled(enabled: boolean, intervalMinutes?: number) 
 async function publishNextProject() {
   if (!env.GITHUB_TOKEN) return { status: "not_configured", message: "GitHub connection is not configured." };
   const db = getDb();
-  const [last] = await db.select().from(projects).where(eq(projects.status, "published")).orderBy(desc(projects.publishedAt)).limit(1);
-  const [control] = await db.select().from(botControl).where(eq(botControl.id, "primary"));
-  if (last?.publishedAt && Date.now() - Date.parse(last.publishedAt) < publishIntervalMs(control?.intervalMinutes)) return { status: "not_due", message: "The next publishing window has not arrived." };
-  const [project] = await db.select().from(projects).where(or(eq(projects.status, "queued"), eq(projects.status, "failed"))).orderBy(projects.createdAt).limit(1);
+  const nowIso = new Date().toISOString();
+  const queueCondition = or(eq(projects.status, "queued"), eq(projects.status, "failed"));
+  const [scheduledProject] = await db.select().from(projects).where(and(queueCondition, lte(projects.scheduledAt, nowIso))).orderBy(asc(projects.scheduledAt), asc(projects.createdAt)).limit(1);
+  let project = scheduledProject;
+  if (!project) {
+    const [nextScheduled] = await db.select().from(projects).where(queueCondition).orderBy(asc(projects.scheduledAt), asc(projects.createdAt)).limit(1);
+    if (nextScheduled?.scheduledAt) return { status: "not_due", message: `Next project is scheduled for ${nextScheduled.scheduledAt}.` };
+    const [last] = await db.select().from(projects).where(eq(projects.status, "published")).orderBy(desc(projects.publishedAt)).limit(1);
+    const [control] = await db.select().from(botControl).where(eq(botControl.id, "primary"));
+    if (last?.publishedAt && Date.now() - Date.parse(last.publishedAt) < publishIntervalMs(control?.intervalMinutes)) return { status: "not_due", message: "The next publishing window has not arrived." };
+    const [unscheduled] = await db.select().from(projects).where(and(queueCondition, isNull(projects.scheduledAt))).orderBy(asc(projects.createdAt)).limit(1);
+    project = unscheduled;
+  }
   if (!project) return { status: "empty", message: "No projects are queued." };
   const repo = `mini-${project.slug}-${project.id.slice(0, 6)}`;
   await db.update(projects).set({ status: "publishing", error: null }).where(eq(projects.id, project.id));
