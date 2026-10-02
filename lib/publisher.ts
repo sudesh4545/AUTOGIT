@@ -171,10 +171,12 @@ export async function runPublisher() {
   try {
     const result = await publishNextProject();
     const finishedAt = new Date().toISOString();
-    await db.insert(botRuns).values({
-      id: crypto.randomUUID(), startedAt: finishedAt, status: result.status,
-      message: result.message, projectId: "projectId" in result ? result.projectId : null,
-    });
+    if (!['not_due', 'empty'].includes(result.status)) {
+      await db.insert(botRuns).values({
+        id: crypto.randomUUID(), startedAt: finishedAt, status: result.status,
+        message: result.message, projectId: "projectId" in result ? result.projectId : null,
+      });
+    }
     await db.update(botControl).set({ lastRunAt: finishedAt, lastStatus: result.status, lastMessage: result.message })
       .where(eq(botControl.id, "primary"));
     return result;
