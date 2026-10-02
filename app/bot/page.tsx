@@ -19,7 +19,7 @@ function indianTime(value: string | null) {
 }
 
 export default function BotPage() {
-  const { projects, connection, refresh } = useStudio();
+  const { projects, connection, refresh, accessKey } = useStudio();
   const [state, setState] = useState<BotState | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -35,7 +35,7 @@ export default function BotPage() {
     setError("");
   }, []);
 
-  useEffect(() => { void load().catch(cause => setError(cause instanceof Error ? cause.message : "Could not load bot status.")); }, [load]);
+  useEffect(() => { void load().catch(cause => setError(cause instanceof Error ? cause.message : "Could not load bot status.")); }, [load, accessKey]);
 
   async function setEnabled(enabled: boolean) {
     setBusy(true); setError(""); setMessage("");
