@@ -20,7 +20,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!await getWorkspaceUser()) return Response.json({ error: "Sign in to manage projects." }, { status: 401 });
+  const configuredSecret = env.BOT_TRIGGER_SECRET;
+  const suppliedSecret = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const isCloudUpload = Boolean(configuredSecret && suppliedSecret === configuredSecret);
+  if (!isCloudUpload && !await getWorkspaceUser()) return Response.json({ error: "Sign in to manage projects." }, { status: 401 });
   if (!env.BUCKET) return Response.json({ error: "Project storage is unavailable." }, { status: 503 });
   try {
     if (Number(request.headers.get("content-length") || 0) > 15 * 1024 * 1024) return Response.json({ error: "Project folder must be under 10 MB." }, { status: 413 });
