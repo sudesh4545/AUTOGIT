@@ -66,8 +66,17 @@ async function ensureRepo(name: string, title: string) {
   if (existing.status !== 404) throw new Error("Cannot verify the project repository.");
   await gh("/user/repos", {
     method: "POST",
-    body: JSON.stringify({ name, description: `Mini project: ${title}`, private: false, auto_init: true }),
+    body: JSON.stringify({ name, description: `Project: ${title}`, private: false, auto_init: true }),
   });
+}
+
+function repositoryName(project: Project) {
+  const titleCaseSlug = project.slug
+    .split("-")
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("-") || "Project";
+  return `${titleCaseSlug}-${project.id.slice(0, 6)}`;
 }
 
 async function ensurePages(repo: string) {
@@ -156,7 +165,7 @@ async function publishNextProject() {
     project = unscheduled;
   }
   if (!project) return { status: "empty", message: "No projects are queued." };
-  const repo = `mini-${project.slug}-${project.id.slice(0, 6)}`;
+  const repo = repositoryName(project);
   await db.update(projects).set({ status: "publishing", error: null }).where(eq(projects.id, project.id));
   try {
     await ensureRepo(repo, project.title);

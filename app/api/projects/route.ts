@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     });
     if (total > MAX_BYTES) return Response.json({ error: "Project folder must be under 5 MB." }, { status: 400 });
     const id = crypto.randomUUID();
-    const slug = title.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "mini-project";
+    const slug = title.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "project";
     const db = getDb();
     const now = new Date().toISOString();
     const [control] = await db.select().from(botControl).where(eq(botControl.id, "primary"));
