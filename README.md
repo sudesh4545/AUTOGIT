@@ -1,6 +1,6 @@
 # AutoGit Studio
 
-AutoGit Studio is Sudesh Mehar's private project queue. Upload a small or mini project through the site. A cloud publishing run releases at most one queued project per 48 hours to GitHub and adds its record to the existing portfolio's Small Projects or Mini Projects collection.
+AutoGit Studio is Sudesh Mehar's private project queue. Upload a project through the site. A cloud publishing run releases at most one queued project per 48 hours to GitHub and adds its record to the existing portfolio collection.
 
 ## What is implemented
 
@@ -40,6 +40,6 @@ Do not put tokens in source, uploaded projects, or browser settings.
 
 The scheduled publishing task calls `POST /api/bot` and checks the returned result. It can run daily while the laptop is off. The endpoint publishes one project only when the last successful release was at least 48 hours earlier. With no queued project, it does nothing. Failed releases stay visible and can retry on the next run.
 
-After a real release, the publisher creates a repository named `mini-<project-slug>-<id>`. It writes the uploaded files, then updates `src/data/autogit-projects.json` in `sudesh-portfolio`. On the first release it also connects `src/data/portfolio.ts` to that feed, preserving the existing collections and filling their current placeholder slots with real projects.
+After a real release, the publisher creates a repository from the project slug in full uppercase, for example `WEATHER-APP`. The words `mini` and `small` are removed automatically. It writes the uploaded files, then updates `src/data/autogit-projects.json` in `sudesh-portfolio`.
 
 The first bot run needs a configured GitHub token and at least one uploaded project. If GitHub or the portfolio structure changes, the project is marked failed with an actionable error instead of being reported as published.

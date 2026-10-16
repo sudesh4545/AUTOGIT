@@ -71,12 +71,12 @@ async function ensureRepo(name: string, title: string) {
 }
 
 function repositoryName(project: Project) {
-  const titleCaseSlug = project.slug
+  const cleanSlug = project.slug
     .split("-")
-    .filter(Boolean)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join("-") || "Project";
-  return `${titleCaseSlug}-${project.id.slice(0, 6)}`;
+    .filter(word => Boolean(word) && !["mini", "small"].includes(word.toLowerCase()))
+    .join("-")
+    .toUpperCase();
+  return cleanSlug || `PROJECT-${project.id.slice(0, 6).toUpperCase()}`;
 }
 
 async function ensurePages(repo: string) {
